@@ -1,156 +1,187 @@
+var rcm = require('./rcm.js');
+
 //****************************************************************************80
 
 function test_rcm_main ( )
 {
-  timestamp ( );
-  console.log("\n");
-  console.log("RCM_PRB\n");
-  console.log("  C++ version\n");
-  console.log("  Test the RCM library.\n");
+  process.stdout.write("\n");
+  process.stdout.write("RCM_PRB\n");
+  process.stdout.write("  C++ version\n");
+  process.stdout.write("  Test the RCM library.\n");
 
   test01();
   test02();
-  test03();
-  test04();
-  test05();
-  test06();
-  test07();
-  test08();
-  test09();
+  // test03();
+  // test04();
+  // test05();
+  // test06();
+  // test07();
+  // test08();
+  // test09();
 
-  test10();
-  test11();
-  test12();
+  // test10();
+  // test11();
+  // test12();
 //
 //  Terminate.
 //
-  console.log("\n");
-  console.log("RCM_PRB\n");
-  console.log("  Normal end of execution.\n");
-  console.log("\n");
-  timestamp ( );
+  process.stdout.write("\n");
+  process.stdout.write("RCM_PRB\n");
+  process.stdout.write("  Normal end of execution.\n");
+  process.stdout.write("\n");
 
   return 0;
 }
 //****************************************************************************80
 
-void test01 ( )
+function test01()
 {
-  var NODE_NUM = 10;
+  var NODE_NUM = 20;
   var ADJ_MAX = (NODE_NUM * (NODE_NUM - 1));
 
   var adj = new Array(ADJ_MAX);
-  var adj_num;
+  var adj_num = { val: 0 };
   var adj_row = new Array(NODE_NUM+1);
   var i;
   var j;
   var k;
   var n_calls;
-  var seed = 123456789;
+  var seed = { val: 123456789 };
 
-  console.log("\n");
-  console.log("TEST01\n");
-  console.log("  ADJ_SET sets up an adjacency matrix incrementally.\n");
+  process.stdout.write("\n");
+  process.stdout.write("TEST01\n");
+  process.stdout.write("  ADJ_SET sets up an adjacency matrix incrementally.\n");
 
   //seed is modified in i4_uniform
-  n_calls = i4_uniform ( 1, ADJ_MAX, seed );
+  n_calls = rcm.i4_uniform ( 1, ADJ_MAX, seed );
 
   //adj_set modifies adj_num
-  adj_set ( NODE_NUM, ADJ_MAX, adj_num, adj_row, adj, -1, -1 );
+  rcm.adj_set ( NODE_NUM, ADJ_MAX, adj_num, adj_row, adj, -1, -1 );
 
-  console.log("\n");
-  console.log("  Creating and recording adjacency information:\n");
-  console.log("\n");
+  process.stdout.write("\n");
+  process.stdout.write("  Creating and recording adjacency information:\n");
+  process.stdout.write("\n");
 
   for ( k = 1; k <= n_calls; k++ )
   {
     //seed is modified in i4_uniform
-    i = i4_uniform ( 1, NODE_NUM, seed );
-    j = i4_uniform ( 1, NODE_NUM, seed );
+    i = rcm.i4_uniform ( 1, NODE_NUM, seed );
+    j = rcm.i4_uniform ( 1, NODE_NUM, seed );
 
-    console.log("  " + setw(8) + i.toString() + " " + setw(8) + j.toString() + "\n");
+    process.stdout.write("  " + i.toString() + " " + j.toString() + "\n");
 
     //adj_set modified adj_num
-    adj_set ( NODE_NUM, ADJ_MAX, adj_num, adj_row, adj, i, j );
+    rcm.adj_set ( NODE_NUM, ADJ_MAX, adj_num, adj_row, adj, i, j );
   }
 
-  adj_print ( NODE_NUM, adj_num, adj_row, adj, "  Random adjacency matrix:" );
+  rcm.adj_print ( NODE_NUM, adj_num, adj_row, adj, "  Random adjacency matrix:" );
 
-  adj_show ( NODE_NUM, adj_num, adj_row, adj );
+  rcm.adj_show ( NODE_NUM, adj_num, adj_row, adj );
+
+  return;
+}
+
+//****************************************************************************80
+
+function graph_01_size (adj_num) {
+  adj_num.val = 28;
+  return 10;
+}
+
+function init_graph_01 ( node_num, adj_num, adj_row, adj ) {
+  var adj_save = [
+    4, 6,
+    3, 5, 7, 10,
+    2, 4, 5,
+    1, 3, 6, 9,
+    2, 3, 7,
+    1, 4, 7, 8,
+    2, 5, 6, 8,
+    6, 7,
+    4,
+    2 ];
+
+  var adj_row_save = [
+    1, 3, 7, 10, 14, 17, 21, 25, 27, 28, 29
+  ];
+  var i;
+
+  for ( i = 0; i < adj_num.val; i++ )
+  {
+    adj[i] = adj_save[i];
+  }
+
+  for ( i = 0; i < node_num + 1; i++ )
+  {
+    adj_row[i] = adj_row_save[i];
+  }
+  return; 
+}
+
+function test02 ( ) {
+  var adj;
+  var adj_num = { val: 0 };
+  var adj_row;
+  var bandwidth;
+  var i;
+  var node_num = 0;
+  var perm;
+  var perm_inv;
+
+  process.stdout.write("\n");
+  process.stdout.write("TEST02\n");
+  process.stdout.write("  GENRCM reorders the nodes in a graph using\n");
+  process.stdout.write("  the Reverse Cuthill McKee algorithm.\n");
+
+  //graph_01_size modifies node_num and adj_num
+  //Change this so it returns node_num, no modification should occur
+  node_num = graph_01_size ( adj_num );
+
+  adj_row =  new Array(node_num.val+1);
+  adj = new Array(adj_num);
+  perm = new Array(node_num.val);
+  perm_inv = new Array(node_num.val);
+
+  node_num = init_graph_01 ( node_num, adj_num, adj_row, adj );
+
+  rcm.adj_print ( node_num, adj_num, adj_row, adj, "  Adjacency matrix:" );
+
+  rcm.adj_show ( node_num, adj_num, adj_row, adj );
+
+  bandwidth = rcm.adj_bandwidth ( node_num, adj_num, adj_row, adj );
+
+  process.stdout.write("\n");
+  process.stdout.write("  ADJ bandwidth = " + bandwidth + "\n");
+
+  rcm.genrcm ( node_num, adj_num, adj_row, adj, perm );
+
+  rcm.perm_inverse3 ( node_num, perm, perm_inv );
+
+  process.stdout.write("\n");
+  process.stdout.write("  The RCM permutation and inverse:\n");
+  process.stdout.write("\n");
+
+  for ( i = 0; i < node_num; i++ )
+  {
+    process.stdout.write("  " + (i + 1)
+         + "  " + perm[i]
+         + "  " + perm_inv[i] + "\n");
+  }
+
+  process.stdout.write("\n");
+  process.stdout.write("  Permuted adjacency matrix:\n");
+  process.stdout.write("\n");
+
+  rcm.adj_perm_show ( node_num, adj_num, adj_row, adj, perm, perm_inv );
+
+  bandwidth = rcm.adj_perm_bandwidth ( node_num, adj_num, adj_row, adj, perm, perm_inv );
+
+  process.stdout.write("\n");
+  process.stdout.write("  ADJ (permuted) bandwidth = " + bandwidth + "\n");
 
   return;
 }
 //****************************************************************************80
-
-// void test02 ( )
-// {
-//   int *adj;
-//   int adj_num;
-//   int *adj_row;
-//   int bandwidth;
-//   int i;
-//   int node_num;
-//   int *perm;
-//   int *perm_inv;
-
-//   cout << "\n";
-//   cout << "TEST02\n";
-//   cout << "  GENRCM reorders the nodes in a graph using\n";
-//   cout << "  the Reverse Cuthill McKee algorithm.\n";
-
-//   graph_01_size ( &node_num, &adj_num );
-
-//   adj_row =  new int[node_num+1];
-//   adj = new int[adj_num];
-//   perm = new int[node_num];
-//   perm_inv = new int[node_num];
-
-//   graph_01_adj ( node_num, adj_num, adj_row, adj );
-
-//   adj_print ( node_num, adj_num, adj_row, adj, "  Adjacency matrix:" );
-
-//   adj_show ( node_num, adj_num, adj_row, adj );
-
-//   bandwidth = adj_bandwidth ( node_num, adj_num, adj_row, adj );
-
-//   cout << "\n";
-//   cout << "  ADJ bandwidth = " << bandwidth << "\n";
-
-//   genrcm ( node_num, adj_num, adj_row, adj, perm );
-
-//   perm_inverse3 ( node_num, perm, perm_inv );
-
-//   cout << "\n";
-//   cout << "  The RCM permutation and inverse:\n";
-//   cout << "\n";
-
-//   for ( i = 0; i < node_num; i++ )
-//   {
-//     cout << "  " << setw(8) << i + 1
-//          << "  " << setw(8) << perm[i]
-//          << "  " << setw(8) << perm_inv[i] << "\n";
-//   }
-
-//   cout << "\n";
-//   cout << "  Permuted adjacency matrix:\n";
-//   cout << "\n";
-
-//   adj_perm_show ( node_num, adj_num, adj_row, adj, perm, perm_inv );
-
-//   bandwidth = adj_perm_bandwidth ( node_num, adj_num, adj_row, adj,
-//     perm, perm_inv );
-
-//   cout << "\n";
-//   cout << "  ADJ (permuted) bandwidth = " << bandwidth << "\n";
-
-//   delete [] adj;
-//   delete [] adj_row;
-//   delete [] perm;
-//   delete [] perm_inv;
-
-//   return;
-// }
-// //****************************************************************************80
 
 // void test03 ( )
 // {
@@ -172,12 +203,12 @@ void test01 ( )
 //   int *triangle_neighbor;
 //   int *triangle_node;
 
-//   cout << "\n";
-//   cout << "TEST03\n";
-//   cout << "  GENRCM generates the Reverse Cuthill McKee ordering.\n";
-//   cout << "\n";
-//   cout << "  Do the test twice.  On the second test, randomly\n";
-//   cout << "  permute the initial nodes.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST03\n";
+//   process.stdout.write("  GENRCM generates the Reverse Cuthill McKee ordering.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("  Do the test twice.  On the second test, randomly\n";
+//   process.stdout.write("  permute the initial nodes.\n";
 
 //   triangulation_order3_example2_size ( &node_num, &triangle_num, &hole_num );
 
@@ -226,8 +257,8 @@ void test01 ( )
 
 //     bandwidth = adj_bandwidth ( node_num, adj_num, adj_row, adj );
 
-//     cout << "\n";
-//     cout << "  ADJ bandwidth = " << bandwidth << "\n";
+//     process.stdout.write("\n";
+//     process.stdout.write("  ADJ bandwidth = " << bandwidth << "\n";
 
 //     perm = new int[node_num];
 
@@ -242,8 +273,8 @@ void test01 ( )
 //     bandwidth = adj_perm_bandwidth ( node_num, adj_num, adj_row, adj,
 //       perm, perm_inv );
 
-//     cout << "\n";
-//     cout << "  Permuted ADJ bandwidth = " << bandwidth << "\n";
+//     process.stdout.write("\n";
+//     process.stdout.write("  Permuted ADJ bandwidth = " << bandwidth << "\n";
 
 //     delete [] adj;
 //     delete [] adj_row;
@@ -277,9 +308,9 @@ void test01 ( )
 //   int *triangle_node;
 //   int triangle_order = 6;
 
-//   cout << "\n";
-//   cout << "TEST04\n";
-//   cout << "  GENRCM generates the Reverse Cuthill McKee ordering.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST04\n";
+//   process.stdout.write("  GENRCM generates the Reverse Cuthill McKee ordering.\n";
 
 //   triangulation_order6_example2_size ( &node_num, &triangle_num, &hole_num );
 
@@ -324,8 +355,8 @@ void test01 ( )
 
 //   bandwidth = adj_bandwidth ( node_num, adj_num, adj_row, adj );
 
-//   cout << "\n";
-//   cout << "  ADJ bandwidth = " << bandwidth << "\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("  ADJ bandwidth = " << bandwidth << "\n";
 
 //   perm = new int[node_num];
 
@@ -340,8 +371,8 @@ void test01 ( )
 //   bandwidth = adj_perm_bandwidth ( node_num, adj_num, adj_row, adj,
 //     perm, perm_inv );
 
-//   cout << "\n";
-//   cout << "  Permuted ADJ bandwidth = " << bandwidth << "\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("  Permuted ADJ bandwidth = " << bandwidth << "\n";
 
 //   delete [] adj;
 //   delete [] adj_row;
@@ -362,11 +393,11 @@ void test01 ( )
 //   int *adj_row;
 //   int node_num;
 
-//   cout << "\n";
-//   cout << "TEST05\n";
-//   cout << "  GRAPH_01_SIZE returns the sizes for graph 1.\n";
-//   cout << "  GRAPH_01_ADJ returns the adjacency for graph 1.\n";
-//   cout << "  ADJ_PRINT prints the adjacency information.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST05\n";
+//   process.stdout.write("  GRAPH_01_SIZE returns the sizes for graph 1.\n";
+//   process.stdout.write("  GRAPH_01_ADJ returns the adjacency for graph 1.\n";
+//   process.stdout.write("  ADJ_PRINT prints the adjacency information.\n";
 
 //   graph_01_size ( &node_num, &adj_num );
 
@@ -402,10 +433,10 @@ void test01 ( )
 //   int root;
 //   int seed = 123456789;
 
-//   cout << "\n";
-//   cout << "TEST06\n";
-//   cout << "  LEVEL_SET computes the level sets of a graph,\n";
-//   cout << "  given a root node (which defines level 1).\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST06\n";
+//   process.stdout.write("  LEVEL_SET computes the level sets of a graph,\n";
+//   process.stdout.write("  given a root node (which defines level 1).\n";
 
 //   graph_01_size ( &node_num, &adj_num );
 
@@ -464,11 +495,11 @@ void test01 ( )
 //   int root;
 //   int seed = 123456789;
 
-//   cout << "\n";
-//   cout << "TEST07\n";
-//   cout << "  ROOT_FIND is given a node in the graph,\n";
-//   cout << "  and returns a better node to use as a starting\n";
-//   cout << "  point for reordering.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST07\n";
+//   process.stdout.write("  ROOT_FIND is given a node in the graph,\n";
+//   process.stdout.write("  and returns a better node to use as a starting\n";
+//   process.stdout.write("  point for reordering.\n";
 
 //   graph_01_size ( &node_num, &adj_num );
 
@@ -489,8 +520,8 @@ void test01 ( )
 //   {
 //     root = i;
 
-//     cout << "\n";
-//     cout << "  Starting root =    " << root << "\n";
+//     process.stdout.write("\n";
+//     process.stdout.write("  Starting root =    " << root << "\n";
 
 //     for ( j = 0; j < node_num; j++ )
 //     {
@@ -500,8 +531,8 @@ void test01 ( )
 //     root_find ( &root, adj_num, adj_row, adj, mask, &level_num,
 //       level_row, level, node_num );
 
-//     cout << "  Suggested root =   " << root << "\n";
-//     cout << "  Number of levels = " << level_num << "\n";
+//     process.stdout.write("  Suggested root =   " << root << "\n";
+//     process.stdout.write("  Number of levels = " << level_num << "\n";
 //   }
 
 //   delete [] adj;
@@ -525,10 +556,10 @@ void test01 ( )
 //   int *triangle_neighbor;
 //   int *triangle_node;
 
-//   cout << "\n";
-//   cout << "TEST08\n";
-//   cout << "  TRIANGULATION_ORDER3_ADJ_COUNT counts the (lower)\n";
-//   cout << "  adjacencies defined by a triangulation.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST08\n";
+//   process.stdout.write("  TRIANGULATION_ORDER3_ADJ_COUNT counts the (lower)\n";
+//   process.stdout.write("  adjacencies defined by a triangulation.\n";
 
 //   triangulation_order3_example2_size ( &node_num, &triangle_num, &hole_num );
 
@@ -571,10 +602,10 @@ void test01 ( )
 //   int *triangle_neighbor;
 //   int *triangle_node;
 
-//   cout << "\n";
-//   cout << "TEST09\n";
-//   cout << "  TRIANGULATION_ORDER3_ADJ_SET sets the (lower)\n";
-//   cout << "  adjacencies defined by a triangulation.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST09\n";
+//   process.stdout.write("  TRIANGULATION_ORDER3_ADJ_SET sets the (lower)\n";
+//   process.stdout.write("  adjacencies defined by a triangulation.\n";
 
 //   triangulation_order3_example2_size ( &node_num, &triangle_num, &hole_num );
 
@@ -600,8 +631,8 @@ void test01 ( )
 
 //   bandwidth = adj_bandwidth ( node_num, adj_num, adj_row, adj );
 
-//   cout << "\n";
-//   cout << "  ADJ bandwidth = " << bandwidth << "\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("  ADJ bandwidth = " << bandwidth << "\n";
 
 //   delete [] adj;
 //   delete [] adj_row;
@@ -638,11 +669,11 @@ void test01 ( )
 //     10,   6,  11 };
 //   int *triangle_neighbor;
 
-//   cout << "\n";
-//   cout << "TEST10\n";
-//   cout << "  For a triangulation of a set of nodes,\n";
-//   cout << "  TRIANGULATION_NEIGHBOR_TRIANGLES determines the\n";
-//   cout << "    adjacency relationships between triangles.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST10\n";
+//   process.stdout.write("  For a triangulation of a set of nodes,\n";
+//   process.stdout.write("  TRIANGULATION_NEIGHBOR_TRIANGLES determines the\n";
+//   process.stdout.write("    adjacency relationships between triangles.\n";
 
 //   i4mat_transpose_print ( TRIANGLE_ORDER, TRIANGLE_NUM, triangle_node,
 //     "  Triangles:" );
@@ -672,10 +703,10 @@ void test01 ( )
 //   int *triangle_neighbor;
 //   int *triangle_node;
 
-//   cout << "\n";
-//   cout << "TEST11\n";
-//   cout << "  TRIANGULATION_ORDER6_ADJ_COUNT counts the (lower)\n";
-//   cout << "  adjacencies defined by a triangulation.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST11\n";
+//   process.stdout.write("  TRIANGULATION_ORDER6_ADJ_COUNT counts the (lower)\n";
+//   process.stdout.write("  adjacencies defined by a triangulation.\n";
 
 //   triangulation_order6_example2_size ( &node_num, &triangle_num, &hole_num );
 
@@ -715,10 +746,10 @@ void test01 ( )
 //   int *triangle_neighbor;
 //   int *triangle_node;
 
-//   cout << "\n";
-//   cout << "TEST12\n";
-//   cout << "  TRIANGULATION_ORDER6_ADJ_SET sets the (lower)\n";
-//   cout << "  adjacencies defined by a triangulation.\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("TEST12\n";
+//   process.stdout.write("  TRIANGULATION_ORDER6_ADJ_SET sets the (lower)\n";
+//   process.stdout.write("  adjacencies defined by a triangulation.\n";
 
 //   triangulation_order6_example2_size ( &node_num, &triangle_num, &hole_num );
 
@@ -746,8 +777,8 @@ void test01 ( )
 
 //   bandwidth = adj_bandwidth ( node_num, adj_num, adj_row, adj );
 
-//   cout << "\n";
-//   cout << "  ADJ bandwidth = " << bandwidth << "\n";
+//   process.stdout.write("\n";
+//   process.stdout.write("  ADJ bandwidth = " << bandwidth << "\n";
 
 //   delete [] adj;
 //   delete [] adj_row;
@@ -757,3 +788,5 @@ void test01 ( )
 
 //   return;
 // }
+
+test_rcm_main();

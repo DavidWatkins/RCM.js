@@ -1,446 +1,456 @@
+module.exports = {};
 
-
-
-
-
-
-//NOT WORKING
-
-function i4vec_reverse ( n, a )
+function adj_contains_ij ( node_num, adj_num, adj_row, adj, i, j ){
+	var k;
+	var khi;
+	var klo;
+	var value;
+//
+//  Symmetric entries are not stored.
+//
+if ( i == j )
 {
-  var i;
-  var j;
+	value = true;
+	return value;
+}
+//
+//  Illegal I, J entries.
+//
+if ( node_num < i )
+{
+	value = false;
+	return value;
+}
+else if ( i < 1 )
+{
+	value = false;
+	return value;
+}
+else if ( node_num < j )
+{
+	value = false;
+	return value;
+}
+else if ( j < 1 )
+{
+	value = false;
+	return value;
+}
+//
+//  Search the adjacency entries already stored for row I,
+//  to see if J has already been stored.
+//
+klo = adj_row[i-1];
+khi = adj_row[i]-1;
 
-  for ( i = 0; i < n / 2; i++ )
-  {
-    j        = a[i];
-    a[i]     = a[n-1-i];
-    a[n-1-i] = j;
-  }
+for ( k = klo; k <= khi; k++ )
+{
+	if ( adj[k-1] == j )
+	{
+		value = true;
+		return value;
+	}
+}
+value = false;
 
-  return;
+return value;
 }
 
-function degree ( root, adj_num, adj_row, adj, mask, deg, iccsze, ls, node_num )
+function adj_insert_ij( node_num, adj_max, adj_num, adj_row, adj, i, j ) {
+	var j_spot;
+	var k;
+//
+//  A new adjacency entry must be made.
+//  Check that we're not exceeding the storage allocation for ADJ.
+//
+if ( adj_max < adj_num.val + 1 ) {
+	process.stdout.write("\n");
+	process.stdout.write("ADJ_INSERT_IJ - Fatal error!\n");
+	process.stdout.write("  All available storage has been used.\n");
+	process.stdout.write("  No more information can be stored!\n");
+	process.stdout.write("  This error occurred for \n");
+	process.stdout.write("  Row I =    " + i + "\n");
+	process.stdout.write("  Column J = " + j + "\n");
+	exit ( 1 );
+}
+//
+//  The action is going to occur between ADJ_ROW(I) and ADJ_ROW(I+1)-1:
+//
+j_spot = adj_row[i-1];
+
+for ( k = adj_row[i-1]; k <= adj_row[i]-1; k++ )
 {
-  var i;
-  var ideg;
-  var j;
-  var jstop;
-  var jstrt;
-  var lbegin;
-  var lvlend;
-  var lvsize;
-  var nbr;
-  var node;
-//
-//  The sign of ADJ_ROW(I) is used to indicate if node I has been considered.
-//
-  ls[0] = root;
-  adj_row[root-1] = -adj_row[root-1];
-  lvlend = 0;
-  iccsze = 1;
-//
-//  LBEGIN is the pointer to the beginning of the current level, and
-//  LVLEND points to the end of this level.
-//
-  for ( ; ; )
-  {
-    lbegin = lvlend + 1;
-    lvlend = iccsze;
-//
-//  Find the degrees of nodes in the current level,
-//  and at the same time, generate the next level.
-//
-    for ( i = lbegin; i <= lvlend; i++ )
-    {
-      node = ls[i-1];
-      jstrt = -adj_row[node-1];
-      jstop = abs ( adj_row[node] ) - 1;
-      ideg = 0;
-
-      for ( j = jstrt; j <= jstop; j++ )
-      {
-        nbr = adj[j-1];
-
-        if ( mask[nbr-1] != 0 )
-        {
-          ideg = ideg + 1;
-
-          if ( 0 <= adj_row[nbr-1] )
-          {
-            adj_row[nbr-1] = -adj_row[nbr-1];
-            iccsze = iccsze + 1;
-            ls[iccsze-1] = nbr;
-          }
-        }
-      }
-      deg[node-1] = ideg;
-    }
-//
-//  Compute the current level width.
-//
-    lvsize = iccsze - lvlend;
-//
-//  If the current level width is nonzero, generate another level.
-//
-    if ( lvsize == 0 )
-    {
-      break;
-    }
-  }
-//
-//  Reset ADJ_ROW to its correct sign and return.
-//
-  for ( i = 0; i < *iccsze; i++ )
-  {
-    node = ls[i] - 1;
-    adj_row[node] = -adj_row[node];
-  }
-
-  return;
+	if ( adj[k-1] == j )
+	{
+		return;
+	}
+	else if ( adj[k-1] < j )
+	{
+		j_spot = k + 1;
+	}
+	else
+	{
+		break;
+	}
 }
 
-function rcm(root, adj_num, adj_row, adj, mask, perm, iccsze, node_num ) 
+for ( k = adj_num.val; j_spot <= k; k-- )
 {
-  var deg;
-  var fnbr;
-  var i;
-  var j;
-  var jstop;
-  var jstrt;
+	adj[k] = adj[k-1];
+}
+adj[j_spot-1] = j;
+
+for ( k = i; k <= node_num; k++ )
+{
+	adj_row[k] = adj_row[k] + 1;
+}
+
+adj_num.val = adj_num.val + 1;
+
+return;
+}
+
+//adj_num is an object
+function adj_set(node_num, adj_max, adj_num, adj_row, adj, irow, jcol) {
+	var i;
+//
+//  Negative IROW or JCOL indicates the data structure should be initialized.
+//
+if ( irow < 0 || jcol < 0 )
+{
+	process.stdout.write("\n");
+	process.stdout.write("ADJ_SET - Note:\n");
+	process.stdout.write("  Initializing adjacency information.\n");
+	process.stdout.write("  Number of nodes NODE_NUM =  " + node_num + "\n");
+	process.stdout.write("  Maximum adjacency ADJ_MAX = " + adj_max + "\n");
+
+	adj_num.val = 0;
+	for ( i = 0; i < node_num + 1; i++ )
+	{
+		adj_row[i] = 1;
+	}
+	for ( i = 0; i < adj_max; i++ )
+	{
+		adj[i] = 0;
+	}
+	return;
+}
+//
+//  Diagonal entries are not stored.
+//
+if ( irow == jcol )
+{
+	return;
+}
+
+if ( node_num < irow )
+{
+	process.stdout.write("\n");
+	process.stdout.write("ADJ_SET - Fatal error!\n");
+	process.stdout.write("  NODE_NUM < IROW.\n");
+	process.stdout.write("  IROW =     " + irow + "\n");
+	process.stdout.write("  NODE_NUM = " + node_num + "\n");
+	exit ( 1 );
+}
+else if ( irow < 1 )
+{
+	process.stdout.write("\n");
+	process.stdout.write("ADJ_SET - Fatal error!\n");
+	process.stdout.write("  IROW < 1.\n");
+	process.stdout.write("  IROW = " + irow + "\n");
+	exit ( 1 );
+}
+else if ( node_num < jcol )
+{
+	process.stdout.write("\n");
+	process.stdout.write("ADJ_SET - Fatal error!\n");
+	process.stdout.write("  NODE_NUM < JCOL.\n");
+	process.stdout.write("  JCOL =     " + jcol + "\n");
+	process.stdout.write("  NODE_NUM = " + node_num + "\n");
+	exit ( 1 );
+}
+else if ( jcol < 1 )
+{
+	process.stdout.write("\n");
+	process.stdout.write("ADJ_SET - Fatal error!\n");
+	process.stdout.write("  JCOL < 1.\n");
+	process.stdout.write("  JCOL = " + jcol + "\n");
+	exit ( 1 );
+}
+
+if ( !adj_contains_ij ( node_num, adj_num, adj_row, adj, irow, jcol ) )
+{
+	adj_insert_ij ( node_num, adj_max, adj_num, adj_row, adj, irow, jcol );
+}
+
+if ( !adj_contains_ij ( node_num, adj_num, adj_row, adj, jcol, irow ) )
+{
+	adj_insert_ij ( node_num, adj_max, adj_num, adj_row, adj, jcol, irow );
+}
+
+return;
+}
+
+function r4_abs ( x )
+{
+  var value;
+
+  if ( 0.0 <= x )
+  {
+    value = x;
+  }
+  else
+  {
+    value = -x;
+  }
+  return value;
+}
+
+function r4_nint ( x )
+{
+  var value;
+
+  if ( x < 0.0 )
+  {
+    value = -( r4_abs ( x ) + 0.5 );
+  }
+  else
+  {
+    value =  ( r4_abs ( x ) + 0.5 );
+  }
+
+  return value;
+}
+
+function i4_max ( i1, i2 )
+{
+  if ( i2 < i1 )
+  {
+    return i1;
+  }
+  else
+  {
+    return i2;
+  }
+
+}
+
+function i4_min ( i1, i2 )
+{
+  if ( i1 < i2 )
+  {
+    return i1;
+  }
+  else
+  {
+    return i2;
+  }
+
+}
+
+function i4_uniform ( a, b, seed ) {
   var k;
-  var l;
-  var lbegin;
-  var lnbr;
-  var lperm;
-  var lvlend;
-  var nbr;
-  var node;
+  var r;
+  var value;
 
-//
-//  If node_num out of bounds, something is wrong.
-//
-  if ( node_num < 1 ) {
-    console.log("\n");
-    console.log("RCM - Fatal error!\n");
-    console.log("  Unacceptable input value of NODE_NUM = " + node_num.toString() + "\n");
-    exit ( 1 );
-  }
-//
-//  If the root is out of bounds, something is wrong.
-//
-  if ( root < 1 || node_num < root )
+  if ( seed.val == 0 )
   {
-    console.log("\n");
-    console.log("RCM - Fatal error!\n");
-    console.log("  Unacceptable input value of ROOT = " + root.toString() + "\n");
-    console.log("  Acceptable values are between 1 and " + node_num + ", inclusive.\n");
-    exit ( 1 );
+    process.stdout.write("\n");
+    process.stdout.write("I4_UNIFORM - Fatal error!\n");
+    process.stdout.write("  Input value of SEED = 0.\n");
+    throw "I4_UNIFORM - FATAL ERROR";
   }
-//
-//  Allocate memory for the degree array.
-//
-  deg = new Array(node_num);
-//
-//  Find the degrees of the nodes in the component specified by MASK and ROOT.
-//
-  degree ( root, adj_num, adj_row, adj, mask, deg, iccsze, perm, node_num );
-//
-//  If the connected component size is less than 1, something is wrong.
-//
-  if ( *iccsze < 1 )
+
+  k = seed.val / 127773;
+
+  seed.val = 16807 * ( seed.val - k * 127773 ) - k * 2836;
+
+  if ( seed.val < 0 )
   {
-    console.log("\n");
-    console.log("RCM - Fatal error!\n");
-    console.log("  Connected component size ICCSZE returned from DEGREE as " + iccsze.toString() + "\n");
-    exit ( 1 );
+    seed.val = seed.val + 2147483647;
   }
-//
-//  Set the mask value for the root.
-//
-  mask[root-1] = 0;
-//
-//  If the connected component is a singleton, there is no ordering necessary.
-//
-  if ( iccsze == 1 )
-  {
-    return;
-  }
-//
-//  Carry out the reordering.
-//
-//  LBEGIN and LVLEND point to the beginning and
-//  the end of the current level respectively.
-//
-  lvlend = 0;
-  lnbr = 1;
 
-  while ( lvlend < lnbr )
-  {
-    lbegin = lvlend + 1;
-    lvlend = lnbr;
+  r = ( seed.val ) * 4.656612875E-10;
+//
+//  Scale R to lie between A-0.5 and B+0.5.
+//
+  r = ( 1.0 - r ) * ( ( i4_min ( a, b ) ) - 0.5 )
+    +         r   * ( ( i4_max ( a, b ) ) + 0.5 );
+//
+//  Use rounding to convert R to an integer between A and B.
+//
+  value = r4_nint ( r );
 
-    for ( i = lbegin; i <= lvlend; i++ )
-    {
-//
-//  For each node in the current level...
-//
-      node = perm[i-1];
-      jstrt = adj_row[node-1];
-      jstop = adj_row[node] - 1;
-//
-//  Find the unnumbered neighbors of NODE.
-//
-//  FNBR and LNBR point to the first and last neighbors
-//  of the current node in PERM.
-//
-      fnbr = lnbr + 1;
+  value = i4_max ( value, i4_min ( a, b ) );
+  value = i4_min ( value, i4_max ( a, b ) );
 
-      for ( j = jstrt; j <= jstop; j++ )
-      {
-        nbr = adj[j-1];
-
-        if ( mask[nbr-1] != 0 )
-        {
-          lnbr = lnbr + 1;
-          mask[nbr-1] = 0;
-          perm[lnbr-1] = nbr;
-        }
-      }
-//
-//  If no neighbors, skip to next node in this level.
-//
-      if ( lnbr <= fnbr )
-      {
-        continue;
-      }
-//
-//  Sort the neighbors of NODE in increasing order by degree.
-//  Linear insertion is used.
-//
-      k = fnbr;
-
-      while ( k < lnbr )
-      {
-        l = k;
-        k = k + 1;
-        nbr = perm[k-1];
-
-        while ( fnbr < l )
-        {
-          lperm = perm[l-1];
-
-          if ( deg[lperm-1] <= deg[nbr-1] )
-          {
-            break;
-          }
-
-          perm[l] = lperm;
-          l = l - 1;
-        }
-        perm[l] = nbr;
-      }
-    }
-  }
-//
-//  We now have the Cuthill-McKee ordering.  
-//  Reverse it to get the Reverse Cuthill-McKee ordering.
-//
-  i4vec_reverse ( *iccsze, perm );
-
-
-  return;
+  return value;
 }
 
-function level_set ( root, adj_num, adj_row, adj, mask, level_num, level_row, level, node_num )
+function adj_print_some ( node_num, node_lo, node_hi, adj_num, adj_row, adj, title )
 {
   var i;
-  var iccsze;
   var j;
-  var jstop;
-  var jstrt;
-  var lbegin;
-  var lvlend;
-  var lvsize;
-  var nbr;
-  var node;
+  var jhi;
+  var jlo;
+  var jmax;
+  var jmin;
 
-  mask[root-1] = 0;
-  level[0] = root;
-  level_num = 0;
-  lvlend = 0;
-  iccsze = 1;
-//
-//  LBEGIN is the pointer to the beginning of the current level, and
-//  LVLEND points to the end of this level.
-//
-  for ( ; ; )
+  process.stdout.write("\n");
+  process.stdout.write(title + "\n");
+  process.stdout.write("\n");
+  process.stdout.write("  Sparse adjacency structure:\n");
+  process.stdout.write("\n");
+  process.stdout.write("  Number of nodes       = " + node_num + "\n");
+  process.stdout.write("  Number of adjacencies = " + adj_num + "\n");
+  process.stdout.write("\n");
+  process.stdout.write("  Node Min Max      Nonzeros \n");
+  process.stdout.write("\n");
+
+  for ( i = node_lo; i <= node_hi; i++ )
   {
-    lbegin = lvlend + 1;
-    lvlend = iccsze;
-    level_num = level_num + 1;
-    level_row[level_num-1] = lbegin;
-//
-//  Generate the next level by finding all the masked neighbors of nodes
-//  in the current level.
-//
-    for ( i = lbegin; i <= lvlend; i++ )
+    jmin = adj_row[i-1];
+    jmax = adj_row[i] - 1;
+
+    if ( jmax < jmin )
     {
-      node = level[i-1];
-      jstrt = adj_row[node-1];
-      jstop = adj_row[node] - 1;
-
-      for ( j = jstrt; j <= jstop; j++ )
-      {
-        nbr = adj[j-1];
-
-        if ( mask[nbr-1] != 0 )
-        {
-          iccsze = iccsze + 1;
-          level[iccsze-1] = nbr;
-          mask[nbr-1] = 0;
-        }
-      }
+      process.stdout.write("  "  + i
+           + "  "  + jmin
+           + "  "  + jmax + "\n");
     }
-//
-//  Compute the current level width (the number of nodes encountered.)
-//  If it is positive, generate the next level.
-//
-    lvsize = iccsze - lvlend;
-
-    if ( lvsize <= 0 )
+    else
     {
-      break;
-    }
-  }
-
-  level_row[level_num] = lvlend + 1;
-//
-//  Reset MASK to 1 for the nodes in the level structure.
-//
-  for ( i = 0; i < iccsze; i++ )
-  {
-    mask[level[i]-1] = 1;
-  }
-
-  return;
-}
-
-function root_find ( root, adj_num, adj_row, adj, mask, level_num, level_row, level, node_num )
-{
-  var iccsze;
-  var j;
-  var jstrt;
-  var k;
-  var kstop;
-  var kstrt;
-  var level_num2;
-  var mindeg;
-  var nabor;
-  var ndeg;
-  var node;
-//
-//  Determine the level structure rooted at ROOT.
-//
-  level_set ( root, adj_num, adj_row, adj, mask, level_num, level_row, level, node_num );
-//
-//  Count the number of nodes in this level structure.
-//
-  iccsze = level_row[level_num] - 1;
-//
-//  Extreme case:
-//    A complete graph has a level set of only a single level.
-//    Every node is equally good (or bad).
-//
-  if ( level_num == 1 )
-  {
-    return;
-  }
-//
-//  Extreme case:
-//    A "line graph" 0--0--0--0--0 has every node in its only level.
-//    By chance, we've stumbled on the ideal root.
-//
-  if ( level_num == iccsze )
-  {
-    return;
-  }
-//
-//  Pick any node from the last level that has minimum degree
-//  as the starting point to generate a new level set.
-//
-  for ( ; ; )
-  {
-    mindeg = iccsze;
-
-    jstrt = level_row[level_num-1];
-    root = level[jstrt-1];
-
-    if ( jstrt < iccsze )
-    {
-      for ( j = jstrt; j <= iccsze; j++ )
+      for ( jlo = jmin; jlo <= jmax; jlo = jlo + 5 )
       {
-        node = level[j-1];
-        ndeg = 0;
-        kstrt = adj_row[node-1];
-        kstop = adj_row[node] - 1;
+        jhi = i4_min ( jlo + 4, jmax );
 
-        for ( k = kstrt; k <= kstop; k++ )
+        if ( jlo == jmin )
         {
-          nabor = adj[k-1];
-          if ( 0 < mask[nabor-1] )
+          process.stdout.write("  "  + i
+               + "  "  + jmin
+               + "  "  + jmax
+               + "   ");
+          for ( j = jlo; j <= jhi; j++ )
           {
-            ndeg = ndeg + 1;
+            cout  + adj[j-1];
           }
+          process.stdout.write("\n");
         }
-
-        if ( ndeg < mindeg )
+        else
         {
-          root = node;
-          mindeg = ndeg;
+          process.stdout.write("                     ");
+          for ( j = jlo; j <= jhi; j++ )
+          {
+            cout  + adj[j-1];
+          }
+          process.stdout.write("\n");
         }
       }
-    }
-//
-//  Generate the rooted level structure associated with this node.
-//
-    level_set ( root, adj_num, adj_row, adj, mask, level_num2, level_row, level, node_num );
-//
-//  If the number of levels did not increase, accept the new ROOT.
-//
-    if ( level_num2 <= level_num )
-    {
-      break;
-    }
-
-    level_num = level_num2;
-//
-//  In the unlikely case that ROOT is one endpoint of a line graph,
-//  we can exit now.
-//
-    if ( iccsze <= level_num )
-    {
-      break;
     }
   }
 
   return;
 }
 
+function adj_print ( node_num, adj_num, adj_row, adj, title )
+{
+  adj_print_some ( node_num, 1, node_num, adj_num, adj_row, adj, title );
+
+  return;
+}
+
+function adj_show ( node_num, adj_num, adj_row, adj )
+{
+  var band;
+  var band_lo;
+  var col;
+  var i;
+  var j;
+  var k;
+  var nonzero_num;
+
+  band = new Array(node_num);
+
+  band_lo = 0;
+  nonzero_num = 0;
+
+  process.stdout.write("\n");
+  process.stdout.write("  Nonzero structure of matrix:\n");
+  process.stdout.write("\n");
+
+  for ( i = 0; i < node_num; i++ )
+  {
+    for ( k = 0; k < node_num; k++ )
+    {
+      band[k] = '.';
+    }
+
+    band[i] = 'D';
+
+    for ( j = adj_row[i]; j <= adj_row[i+1]-1; j++ )
+    {
+      col = adj[j-1] - 1;
+      if ( col < i )
+      {
+        nonzero_num = nonzero_num + 1;
+      }
+      band_lo = max ( band_lo, i - col );
+      band[col] = 'X';
+    }
+    process.stdout.write("  " + i + 1 + " ");
+    for ( j = 0; j < node_num; j++ )
+    {
+      process.stdout.write(band[j]);
+    }
+    process.stdout.write("\n");
+  }
+
+  process.stdout.write("\n");
+  process.stdout.write("  Lower bandwidth = " + band_lo + "\n");
+  process.stdout.write("  Lower envelope contains " + nonzero_num + " nonzeros.\n");
+
+  return;
+}
+
+function adj_bandwidth ( node_num, adj_num, adj_row, adj )
+{
+  int band_hi;
+  int band_lo;
+  int col;
+  int i;
+  int j;
+  int value;
+
+  band_lo = 0;
+  band_hi = 0;
+
+  for ( i = 0; i < node_num; i++ )
+  {
+    for ( j = adj_row[i]; j <= adj_row[i+1]-1; j++ )
+    {
+      col = adj[j-1] - 1;
+      band_lo = i4_max ( band_lo, i - col );
+      band_hi = i4_max ( band_hi, col - i );
+    }
+  }
+
+  value = band_lo + 1 + band_hi;
+
+  return value;
+}
 
 function genrcm ( node_num, adj_num, adj_row, adj, perm )
 {
   var i;
-  var iccsze;
-  var level_num;
+  var iccsze = { val: 0 };
+  var level_num = { val: 0 };
   var level_row;
   var mask;
   var num;
-  var root;
+  var root = { val: 0 };
 
-  level_row = new int[node_num+1];
-  mask = new int[node_num];
+  level_row = new Array(node_num+1);
+  mask = new Array(node_num);
 
   for ( i = 0; i < node_num; i++ )
   {
@@ -461,13 +471,11 @@ function genrcm ( node_num, adj_num, adj_row, adj, perm )
 //  Find a pseudo-peripheral node ROOT.  The level structure found by
 //  ROOT_FIND is stored starting at PERM(NUM).
 //
-      root_find ( root, adj_num, adj_row, adj, mask, level_num,
-        level_row, perm+num-1, node_num );
+      root_find ( root, adj_num, adj_row, adj, mask, level_num, level_row, perm+num-1, node_num );
 //
 //  RCM orders the component using ROOT as the starting node.
 //
-      rcm ( root, adj_num, adj_row, adj, mask, perm+num-1, iccsze,
-        node_num );
+      rcm ( root, adj_num, adj_row, adj, mask, perm+num-1, iccsze, node_num );
 
       num = num + iccsze;
 //
@@ -482,3 +490,16 @@ function genrcm ( node_num, adj_num, adj_row, adj, perm )
 
   return;
 }
+
+//test1
+module.exports.adj_set = adj_set;
+module.exports.i4_uniform = i4_uniform;
+module.exports.adj_print = adj_print;
+module.exports.adj_show = adj_show;
+
+//test2
+module.exports.adj_bandwidth = adj_bandwidth;
+module.exports.genrcm = genrcm;
+module.exports.perm_inverse3 = perm_inverse3;
+module.exports.adj_perm_show = adj_perm_show;
+module.exports.adj_perm_bandwidth = adj_perm_bandwidth;
